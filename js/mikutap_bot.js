@@ -6,7 +6,9 @@ let textCanvasElem = $(canvasSelector)[0];
 const BLOCK_COLS = 8;
 const BLOCK_ROWS = 4;
 
-const DEFAULT_FONT = "64px serif";
+const DEFAULT_FONT = "92px 'Source Han Serif SC', serif";
+const DEFAULT_TEXT_FILTER = ""; // blur(4px)
+const DEFAULT_COLOR = "#f6f6f6"
 
 function getBlockWidthHeight() {
   if (!canvasElem) {
@@ -74,17 +76,19 @@ function createOrGetTextCanvas(width, height) {
   return textCanvasElem;
 }
 
-function drawText(posX, posY, text = "HI", font = DEFAULT_FONT) {
+function drawText(posX, posY, text = "HI", font = DEFAULT_FONT, color = DEFAULT_COLOR, filter = DEFAULT_TEXT_FILTER) {
   if (!canvasElem) {
     canvasElem = $(canvasSelector)[0];
   }
   let elem = createOrGetTextCanvas(canvasElem.width, canvasElem.height);
   let ctx = elem.getContext("2d");
   ctx.font = font;
+  ctx.fillStyle = color;
+  ctx.filter = filter;
   ctx.fillText(text, posX, posY);
 }
 
-function clearText(posX, posY, text = "HI", font = DEFAULT_FONT) {
+function clearText(posX, posY, text = "HI", font = DEFAULT_FONT, filter = DEFAULT_TEXT_FILTER) {
   // TODO
 }
 
@@ -97,7 +101,7 @@ function clearTextAll() {
   ctx.clearRect(0, 0, textCanvasElem.width, textCanvasElem.height);
 }
 
-function drawTextBlock(blockX, blockY, text = "HI", font = DEFAULT_FONT) {
+function drawTextBlock(blockX, blockY, text = "HI", font = DEFAULT_FONT, color = DEFAULT_COLOR, filter = DEFAULT_TEXT_FILTER) {
   let { blockWidth, blockHeight } = getBlockWidthHeight();
   if (blockX < 1) {
     blockX = 1;
@@ -114,7 +118,7 @@ function drawTextBlock(blockX, blockY, text = "HI", font = DEFAULT_FONT) {
   let clientX = blockWidth / 2 + blockWidth * (blockX - 1) - parseInt(font) / 2;
   let clientY =
     blockHeight / 2 + blockHeight * (blockY - 1) + parseInt(font) / 2;
-  drawText(clientX, clientY, text, font);
+  drawText(clientX, clientY, text, font, color, filter);
 }
 
 function clearTextBlock(blockX, blockY) {
@@ -170,7 +174,7 @@ function isLoop(blockList) {
 }
 
 function getRandomAdjoiningBlock(block, currentBlockList, depth = 0) {
-  if (depth > currentBlockList.length) {
+  if (depth > currentBlockList.length * 2) {
     if (currentBlockList.length > BLOCK_COLS * BLOCK_ROWS) {
       return [randomInRange(1, BLOCK_COLS), randomInRange(1, BLOCK_ROWS)];
     } else {
@@ -274,18 +278,18 @@ function randomBlockList(length) {
   return blockList;
 }
 
-async function drawTextOnConsecutiveBlockList(text, isTrigger = false, triggerTime = 200) {
+async function drawTextOnConsecutiveBlockList(text, isTrigger = false, triggerTime = 200, interval = 1) {
   if(!text){
     return;
   }
   var length = text.length;
   var blockList = randomBlockList(length);
   for (var i in blockList) {
-    clearTextBlock(blockList[i][0], blockList[i][1]);
-    if(isTrigger){
+    if(isTrigger && i % interval === 0){
       triggerClickBlock(blockList[i][0], blockList[i][1]);
       await sleep(triggerTime);
     }
+    clearTextBlock(blockList[i][0], blockList[i][1]);
     drawTextBlock(blockList[i][0], blockList[i][1], text.charAt(i));
   }
 }
@@ -304,23 +308,29 @@ function bpmPlay(bpm, fn) {
   }, (60 * 1000) / bpm);
 }
 
-function testBpmPlay(lyrics = TEST_LYRICS, bpm = 120, measures = TEST_LYRICS.length, beats = 4) {
+function testBpmPlay(lyrics = TEST_LYRICS, bpm = 120, measures = TEST_LYRICS.length, beats = 4, interval = 1) {
   let counter = measures * beats;
+  let measureTime = 60 * 1000 / bpm * beats;
   let index = 0;
   let timer = bpmPlay(bpm, function () {
     if(index % beats === 0){
-      drawTextOnConsecutiveBlockList(TEST_LYRICS[Math.round(index/beats)], true);
+      let words = lyrics[Math.round(index/beats)] ? lyrics[Math.round(index/beats)].length : 0;
+      let triggerTime = 200;
+      if(words > 0){
+        triggerTime = measureTime / words;
+      }
+      drawTextOnConsecutiveBlockList(lyrics[Math.round(index/beats)], true, triggerTime, interval);
       setTimeout(function () {
         clearTextAll();
-      }, 3000);
-      console.log(TEST_LYRICS[Math.round(index/beats)]);
+      }, 1000 + triggerTime * 10);
+      console.log(lyrics[Math.round(index/beats)], triggerTime);
     }
     /*
     let x = randomInRange(1, BLOCK_COLS);
     let y = randomInRange(1, BLOCK_ROWS);
     clearTextBlock(x, y);
     triggerClickBlock(x, y);
-    drawTextBlock(x, y, TEST_LYRICS[index]);
+    drawTextBlock(x, y, lyrics[index]);
     */
     index++;
     if (index > counter) {
