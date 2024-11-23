@@ -167,7 +167,27 @@ function isLoop(blockList){
   // TODO
 }
 
-function getRandomAdjoiningBlock(block, currentBlockList) {
+function getRandomAdjoiningBlock(block, currentBlockList, depth = 0) {
+  if(depth > currentBlockList.length){
+    if(currentBlockList.length > (BLOCK_COLS * BLOCK_ROWS)){
+      return [
+        randomInRange(1, BLOCK_COLS),
+        randomInRange(1, BLOCK_ROWS),
+      ]
+    } else {
+      var newBlock = [
+        randomInRange(1, BLOCK_COLS),
+        randomInRange(1, BLOCK_ROWS),
+      ];
+      while(isBlockInList(newBlock, currentBlockList)){
+        newBlock = [
+          randomInRange(1, BLOCK_COLS),
+          randomInRange(1, BLOCK_ROWS),
+        ];
+      }
+      return newBlock;
+    }
+  }
   // TODO dead loop
   var coin = Math.random();
   if (coin < 0.25) {
@@ -181,10 +201,10 @@ function getRandomAdjoiningBlock(block, currentBlockList) {
       ) {
         return newBlock;
       } else {
-        return getRandomAdjoiningBlock(block, currentBlockList);
+        return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
       }
     } else {
-      return getRandomAdjoiningBlock(block, currentBlockList);
+      return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
     }
   } else if (coin < 0.5) {
     // x-1
@@ -197,10 +217,10 @@ function getRandomAdjoiningBlock(block, currentBlockList) {
       ) {
         return newBlock;
       } else {
-        return getRandomAdjoiningBlock(block, currentBlockList);
+        return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
       }
     } else {
-      return getRandomAdjoiningBlock(block, currentBlockList);
+      return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
     }
   } else if (coin < 0.75) {
     // y+1
@@ -213,10 +233,10 @@ function getRandomAdjoiningBlock(block, currentBlockList) {
       ) {
         return newBlock;
       } else {
-        return getRandomAdjoiningBlock(block, currentBlockList);
+        return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
       }
     } else {
-      return getRandomAdjoiningBlock(block, currentBlockList);
+      return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
     }
   } else {
     // y-1
@@ -229,10 +249,10 @@ function getRandomAdjoiningBlock(block, currentBlockList) {
       ) {
         return newBlock;
       } else {
-        return getRandomAdjoiningBlock(block, currentBlockList);
+        return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
       }
     } else {
-      return getRandomAdjoiningBlock(block, currentBlockList);
+      return getRandomAdjoiningBlock(block, currentBlockList, depth + 1);
     }
   }
 }
