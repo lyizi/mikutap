@@ -139,6 +139,125 @@ function clearTextBlock(blockX, blockY) {
   ctx.clearRect(clientX, clientY, blockWidth, blockHeight);
 }
 
+function isBlockAdjoining(block1, block2) {
+  if (!block1 || !block2 || block1.length < 2 || block2.length < 2) {
+    return false;
+  } else {
+    return block1[0] == block2[0] || block1[1] == block2[1];
+  }
+}
+
+function isBlockInList(block, blockList) {
+  var hasBlock = blockList.find(function (item) {
+    return item[0] === block[0] && item[1] === block[1];
+  });
+  return !!hasBlock;
+}
+
+function isDeadend(block, blockList) {
+  return (
+    isBlockInList([block[0] - 1, block[1]], blockList) &&
+    isBlockInList([block[0] + 1, block[1]], blockList) &&
+    isBlockInList([block[0], block[1] - 1], blockList) &&
+    isBlockInList([block[0], block[1] + 1], blockList)
+  );
+}
+
+function isLoop(blockList){
+  // TODO
+}
+
+function getRandomAdjoiningBlock(block, currentBlockList) {
+  // TODO dead loop
+  var coin = Math.random();
+  if (coin < 0.25) {
+    // x+1
+    var newX = block[0] + 1;
+    if (newX <= BLOCK_COLS) {
+      var newBlock = [newX, block[1]];
+      if (
+        !isBlockInList(newBlock, currentBlockList) &&
+        !isDeadend(newBlock, currentBlockList.concat(block))
+      ) {
+        return newBlock;
+      } else {
+        return getRandomAdjoiningBlock(block, currentBlockList);
+      }
+    } else {
+      return getRandomAdjoiningBlock(block, currentBlockList);
+    }
+  } else if (coin < 0.5) {
+    // x-1
+    var newX = block[0] - 1;
+    if (newX >= 1) {
+      var newBlock = [newX, block[1]];
+      if (
+        !isBlockInList(newBlock, currentBlockList) &&
+        !isDeadend(newBlock, currentBlockList.concat(block))
+      ) {
+        return newBlock;
+      } else {
+        return getRandomAdjoiningBlock(block, currentBlockList);
+      }
+    } else {
+      return getRandomAdjoiningBlock(block, currentBlockList);
+    }
+  } else if (coin < 0.75) {
+    // y+1
+    var newY = block[1] + 1;
+    if (newY <= BLOCK_ROWS) {
+      var newBlock = [block[0], newY];
+      if (
+        !isBlockInList(newBlock, currentBlockList) &&
+        !isDeadend(newBlock, currentBlockList.concat(block))
+      ) {
+        return newBlock;
+      } else {
+        return getRandomAdjoiningBlock(block, currentBlockList);
+      }
+    } else {
+      return getRandomAdjoiningBlock(block, currentBlockList);
+    }
+  } else {
+    // y-1
+    var newY = block[1] - 1;
+    if (newY >= 1) {
+      var newBlock = [block[0], newY];
+      if (
+        !isBlockInList(newBlock, currentBlockList) &&
+        !isDeadend(newBlock, currentBlockList.concat(block))
+      ) {
+        return newBlock;
+      } else {
+        return getRandomAdjoiningBlock(block, currentBlockList);
+      }
+    } else {
+      return getRandomAdjoiningBlock(block, currentBlockList);
+    }
+  }
+}
+
+function randomBlockList(length) {
+  var randomFirstBlock = [
+    randomInRange(1, BLOCK_COLS),
+    randomInRange(1, BLOCK_ROWS),
+  ];
+  var blockList = [randomFirstBlock];
+  for (var i = 1; i < length; i++) {
+    var newBlock = getRandomAdjoiningBlock(blockList[i - 1], blockList);
+    blockList.push(newBlock);
+  }
+  return blockList;
+}
+
+function drawTextOnConsecutiveBlockList(text) {
+  var length = text.length;
+  var blockList = randomBlockList(length);
+  for(var i in blockList){
+    drawTextBlock(blockList[i][0], blockList[i][1], text.charAt(i));
+  }
+}
+
 function sleep(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
@@ -162,7 +281,7 @@ function testBpmPlay(bpm = 130, measures = 16, beats = 4) {
     clearTextBlock(x, y);
     triggerClickBlock(x, y);
     drawTextBlock(x, y, index);
-    setTimeout(function(){
+    setTimeout(function () {
       clearTextBlock(x, y);
     }, 3000);
     index++;
