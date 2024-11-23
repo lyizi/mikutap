@@ -6,6 +6,8 @@ let textCanvasElem = $(canvasSelector)[0];
 const BLOCK_COLS = 8;
 const BLOCK_ROWS = 4;
 
+const DEFAULT_FONT = "64px serif";
+
 function getBlockWidthHeight() {
   if (!canvasElem) {
     canvasElem = $(canvasSelector)[0];
@@ -72,7 +74,7 @@ function createOrGetTextCanvas(width, height) {
   return textCanvasElem;
 }
 
-function drawText(posX, posY, text = "HI", font = "48px serif") {
+function drawText(posX, posY, text = "HI", font = DEFAULT_FONT) {
   if (!canvasElem) {
     canvasElem = $(canvasSelector)[0];
   }
@@ -82,7 +84,7 @@ function drawText(posX, posY, text = "HI", font = "48px serif") {
   ctx.fillText(text, posX, posY);
 }
 
-function clearText(posX, posY, text = "HI", font = "48px serif") {
+function clearText(posX, posY, text = "HI", font = DEFAULT_FONT) {
   // TODO
 }
 
@@ -95,7 +97,7 @@ function clearTextAll() {
   ctx.clearRect(0, 0, textCanvasElem.width, textCanvasElem.height);
 }
 
-function drawTextBlock(blockX, blockY, text = "HI", font = "48px serif") {
+function drawTextBlock(blockX, blockY, text = "HI", font = DEFAULT_FONT) {
   let { blockWidth, blockHeight } = getBlockWidthHeight();
   if (blockX < 1) {
     blockX = 1;
@@ -163,27 +165,21 @@ function isDeadend(block, blockList) {
   );
 }
 
-function isLoop(blockList){
+function isLoop(blockList) {
   // TODO
 }
 
 function getRandomAdjoiningBlock(block, currentBlockList, depth = 0) {
-  if(depth > currentBlockList.length){
-    if(currentBlockList.length > (BLOCK_COLS * BLOCK_ROWS)){
-      return [
-        randomInRange(1, BLOCK_COLS),
-        randomInRange(1, BLOCK_ROWS),
-      ]
+  if (depth > currentBlockList.length) {
+    if (currentBlockList.length > BLOCK_COLS * BLOCK_ROWS) {
+      return [randomInRange(1, BLOCK_COLS), randomInRange(1, BLOCK_ROWS)];
     } else {
       var newBlock = [
         randomInRange(1, BLOCK_COLS),
         randomInRange(1, BLOCK_ROWS),
       ];
-      while(isBlockInList(newBlock, currentBlockList)){
-        newBlock = [
-          randomInRange(1, BLOCK_COLS),
-          randomInRange(1, BLOCK_ROWS),
-        ];
+      while (isBlockInList(newBlock, currentBlockList)) {
+        newBlock = [randomInRange(1, BLOCK_COLS), randomInRange(1, BLOCK_ROWS)];
       }
       return newBlock;
     }
@@ -263,22 +259,38 @@ function randomBlockList(length) {
     randomInRange(1, BLOCK_ROWS),
   ];
   var blockList = [randomFirstBlock];
+  var maxBlock = BLOCK_COLS * BLOCK_ROWS;
   for (var i = 1; i < length; i++) {
-    var newBlock = getRandomAdjoiningBlock(blockList[i - 1], blockList);
-    blockList.push(newBlock);
+    if (i < maxBlock) {
+      var newBlock = getRandomAdjoiningBlock(blockList[i - 1], blockList);
+      blockList.push(newBlock);
+    } else {
+      blockList.push([
+        randomInRange(1, BLOCK_COLS),
+        randomInRange(1, BLOCK_ROWS),
+      ]);
+    }
   }
   return blockList;
 }
 
-function drawTextOnConsecutiveBlockList(text) {
+async function drawTextOnConsecutiveBlockList(text, isTrigger = false, triggerTime = 200) {
+  if(!text){
+    return;
+  }
   var length = text.length;
   var blockList = randomBlockList(length);
-  for(var i in blockList){
+  for (var i in blockList) {
+    clearTextBlock(blockList[i][0], blockList[i][1]);
+    if(isTrigger){
+      triggerClickBlock(blockList[i][0], blockList[i][1]);
+      await sleep(triggerTime);
+    }
     drawTextBlock(blockList[i][0], blockList[i][1], text.charAt(i));
   }
 }
 
-function sleep(time) {
+async function sleep(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
@@ -292,22 +304,65 @@ function bpmPlay(bpm, fn) {
   }, (60 * 1000) / bpm);
 }
 
-function testBpmPlay(bpm = 130, measures = 16, beats = 4) {
+function testBpmPlay(lyrics = TEST_LYRICS, bpm = 120, measures = TEST_LYRICS.length, beats = 4) {
   let counter = measures * beats;
   let index = 0;
   let timer = bpmPlay(bpm, function () {
+    if(index % beats === 0){
+      drawTextOnConsecutiveBlockList(TEST_LYRICS[Math.round(index/beats)], true);
+      setTimeout(function () {
+        clearTextAll();
+      }, 3000);
+      console.log(TEST_LYRICS[Math.round(index/beats)]);
+    }
+    /*
     let x = randomInRange(1, BLOCK_COLS);
     let y = randomInRange(1, BLOCK_ROWS);
     clearTextBlock(x, y);
     triggerClickBlock(x, y);
-    drawTextBlock(x, y, index);
-    setTimeout(function () {
-      clearTextBlock(x, y);
-    }, 3000);
+    drawTextBlock(x, y, TEST_LYRICS[index]);
+    */
     index++;
-    console.log(index);
     if (index > counter) {
       clearInterval(timer);
     }
   });
 }
+
+// https://moegirl.uk/%E6%99%AE%E9%80%9A%E4%B8%8D%E8%BF%87%E7%9A%84%E4%B8%96%E7%95%8C%E5%BE%81%E6%9C%8D
+const TEST_LYRICS = [
+  "狭窄教室中的蜗牛",
+  "我咂着嘴哼着那旋律",
+  "欺负人的孩子 被欺负的孩子",
+  "不管哪个都讨厌青椒 重大发现",
+  "帅孩子也是 可爱的孩子也是 都是你的",
+  "所以 不管是谎言还是真心话都可以的调查",
+  "好痛好痛 因为讨厌疼痛",
+  "所以不得不抗拒啊",
+  "谢谢你 早上好 对不起 所有的话",
+  "总有一天会变成让人怀念的话语",
+  "不管十四岁还是四十岁 都跳舞吧 啦哒哒哒",
+  "谁啊谁啊 来救救大家",
+  "焦躁不安 到处乱扔 大奖赛 小孩子可爱的挖苦",
+  "恋人也好 侵略者也好 哪个都是大肉块 大实验",
+  "牛腰肉也好 燕窝也好 都是你的",
+  "所以 间谍的通话记录是秘密啊",
+  "好恐怖好恐怖 因为讨厌恐怖",
+  "所以才想睡觉",
+  "好开心 好难过 恶作剧 所以一切",
+  "有一天会被一天到晚地监视",
+  "佐藤先生 铃木先生 一起歌唱吧 啦啦啦啦",
+  "有一天 有一天 甚至忘记姓名",
+  "成为伙伴的话就是圆满结局吗",
+  "被伙伴排斥的话去哪里呢",
+  "沾满鲜血的护照",
+  "选择的瞬间 马上马上 马上就来了",
+  "再见 晚安 明天见 所有一切",
+  "互不牵绊关系间断的那天会到来",
+  "田中先生 高桥先生 开怀大笑吧 啊哈哈哈",
+  "谁啊谁啊谁啊谁啊谁啊",
+  "谢谢你 早上好 对不起 所有的话",
+  "总有一天会变成让人怀念的话语",
+  "阴谋论还是 煤气灶 跳舞吧 啦哒哒哒",
+  "谁啊谁啊 来救救大家",
+];
